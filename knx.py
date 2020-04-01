@@ -5,7 +5,7 @@ import asyncio as aio
 import socket
 import struct
 from typing import NamedTuple, Any, Union, Iterable, Callable
-
+from enum import Enum, auto as enum_auto_value
 
 EIB_OPEN_GROUPCON = 0x26
 EIB_GROUP_PACKET = 0x27
@@ -19,11 +19,33 @@ class GroupAddress(NamedTuple):
     middle: int
     sub: int
 
+class PacketType(Enum):
+    Write = KNXWRITE
+    Response = 0x40
+    Read = KNXREAD
+    Unknown = enum_auto_value()
 
 class Telegram(NamedTuple):
     src: str
     dst: str
+    packet_type: PacketType
     value: Any
+
+    @staticmethod
+    def from_packet_flag(flag: int):
+        """ convert a integer flag to an enum that represents the packet type
+
+        """
+        flag = flag & 0xC0
+
+        if flag == PacketType.Write:
+            return PacketType.Write
+        elif flag == PacketType.Response:
+            return PacketType.Response
+        elif flag == PacketType.Read:
+            return PacketType.Read
+        else:
+            return PacketType.Unknown
 
 
 def encode_ga(addr: Union[str, GroupAddress]) -> int:
@@ -142,7 +164,7 @@ def _decode(buf: bytearray) -> Telegram:
     else:
         value = data[1:]
 
-    return Telegram(src, dst, value)
+    return Telegram(src, dst, value, PacketType.from_packet_flag(flg))
 
 
 @coroutine
