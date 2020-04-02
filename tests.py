@@ -13,6 +13,29 @@ def f(output):
         x = (yield)
         output.append(x)
 
+class PacketTypeTest(unittest.TestCase):
+    def test_write_packet(self):
+        x = knx.PacketType.from_packet_flag(0x80)
+        self.assertEqual(x, knx.PacketType.Write)
+        x = knx.PacketType.from_packet_flag(0x81)
+        self.assertEqual(x, knx.PacketType.Write)
+
+    def test_response_packet(self):
+        x = knx.PacketType.from_packet_flag(0x40)
+        self.assertEqual(x, knx.PacketType.Response)
+        x = knx.PacketType.from_packet_flag(0x41)
+        self.assertEqual(x, knx.PacketType.Response)
+
+    def test_read_packet(self):
+        x = knx.PacketType.from_packet_flag(0x0)
+        self.assertEqual(x, knx.PacketType.Read)
+
+    def test_unknown_packet(self):
+        x = knx.PacketType.from_packet_flag(0xC0)
+        self.assertEqual(x, knx.PacketType.Unknown)
+        x = knx.PacketType.from_packet_flag(0xD3)
+        self.assertEqual(x, knx.PacketType.Unknown)
+
 
 class KnxTest(unittest.TestCase):
     def test_encode_ga(self):

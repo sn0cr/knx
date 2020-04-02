@@ -25,27 +25,29 @@ class PacketType(Enum):
     Read = KNXREAD
     Unknown = enum_auto_value()
 
-class Telegram(NamedTuple):
-    src: str
-    dst: str
-    packet_type: PacketType
-    value: Any
-
     @staticmethod
     def from_packet_flag(flag: int):
         """ convert a integer flag to an enum that represents the packet type
 
         """
         flag = flag & 0xC0
-
-        if flag == PacketType.Write:
+        if flag == 0xC0:
+            return PacketType.Unknown # both bits set, will propably not happen
+        elif flag == PacketType.Write.value:
             return PacketType.Write
-        elif flag == PacketType.Response:
+        elif flag == PacketType.Response.value:
             return PacketType.Response
-        elif flag == PacketType.Read:
+        elif flag == PacketType.Read.value:
             return PacketType.Read
         else:
             return PacketType.Unknown
+
+
+class Telegram(NamedTuple):
+    src: str
+    dst: str
+    value: Any
+    packet_type: PacketType
 
 
 def encode_ga(addr: Union[str, GroupAddress]) -> int:
@@ -135,6 +137,7 @@ def _decode(buf: bytearray) -> Telegram:
 
         2 byte: src
         2 byte: dst
+        1 byte: "type" (if a bit is written its part of the bit write)
         X byte: data
 
     Returns a Telegram namedtuple.
@@ -145,10 +148,10 @@ def _decode(buf: bytearray) -> Telegram:
     bytestring.
 
     >>> _decode(bytearray([0x11, 0xFE, 0x00, 0x07, 0x00, 0x83]))
-    Telegram(src='1.1.254', dst='0/0/7', value=3)
+    Telegram(src='1.1.254', dst='0/0/7', value=3, packet_type=<PacketType.Write: 128>)
 
     >>> _decode(bytearray([0x11, 0x08, 0x00, 0x14, 0x00, 0x81]))
-    Telegram(src='1.1.8', dst='0/0/20', value=1)
+    Telegram(src='1.1.8', dst='0/0/20', value=1, packet_type=<PacketType.Write: 128>)
 
     """
     src = decode_ia(buf[0] << 8 | buf[1])
