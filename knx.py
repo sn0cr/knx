@@ -170,7 +170,6 @@ def _decode(buf: bytearray) -> Telegram:
     return Telegram(src, dst, value, PacketType.from_packet_flag(flg))
 
 
-@coroutine
 def telegram_decoder(target=None):
     """ a coroutine that receives binary telegrams and forwards them decoded
 
@@ -205,8 +204,8 @@ def telegram_decoder(target=None):
             num_read = 0
             telegram_length = 2
             continue
-
-        target.send(_decode(buf[4:]))
+        if target:
+            target.send(_decode(buf[4:]))
 
         telegram_length = 2
         num_read = 0
@@ -288,7 +287,9 @@ def read(writer, addr):
 
 
 async def listen(reader, receiver, decoder=telegram_decoder):
+    receiver.send(None)
     decoder = decoder(receiver)
+    decoder.send(None)
     while True:
         data = await reader.read(100)
         decoder.send(data)
@@ -297,6 +298,7 @@ async def listen(reader, receiver, decoder=telegram_decoder):
 async def open_connection(host, port, *args, **kwargs):
     reader, writer = await aio.open_connection(host, port, *args, **kwargs)
     writer.write(encode_data('HHB', (EIB_OPEN_GROUPCON, 0, 0)))
+    await writer.drain()
     return reader, writer
 
 
