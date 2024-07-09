@@ -28,7 +28,8 @@ setup(
         'Programming Language :: Python :: 3.7',
         'License :: OSI Approved :: MIT License',
     ],
-    use_scm_version=True,
+    version="0.4.1",
+    # use_scm_version=True, # makes the nix build of this library fail
     setup_requires=['setuptools_scm'],
     test_suite='tests'
 )
